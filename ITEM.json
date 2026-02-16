@@ -1,0 +1,24 @@
+{
+  "items": [
+    { "id": "itm_wood", "name": "木头", "type": "resource", "description": "基础建材，用于建筑与制作。" },
+    { "id": "itm_food", "name": "食物", "type": "resource", "description": "维持生存的消耗资源。" },
+    { "id": "itm_iron", "name": "铁", "type": "resource", "description": "金属原料，用于装备和科研。" },
+    { "id": "itm_coal", "name": "煤炭", "type": "resource", "description": "燃料资源，用于冶炼和升级。" },
+    { "id": "itm_niter", "name": "硝石", "type": "resource", "description": "稀有矿物，用于高阶研究。" },
+    { "id": "itm_wheat", "name": "谷物", "type": "material", "description": "农田收获作物。" },
+    { "id": "itm_fish", "name": "鱼", "type": "material", "description": "湖泊可获取的食材。" },
+    { "id": "itm_herb", "name": "草药", "type": "material", "description": "药剂材料。" },
+    { "id": "itm_ice_core", "name": "冰晶", "type": "material", "description": "冬季湖面结冰时可能获得。" },
+    { "id": "itm_resin", "name": "树脂", "type": "material", "description": "林地稀有副产物。" },
+    { "id": "itm_ruins_part", "name": "遗迹零件", "type": "material", "description": "古遗迹中的技术残件。" },
+    { "id": "itm_bandage", "name": "绷带", "type": "consumable", "description": "应急恢复道具。" },
+    { "id": "itm_heal_potion", "name": "治疗药剂", "type": "consumable", "description": "恢复生命值。" },
+    { "id": "itm_mana_potion", "name": "法力药剂", "type": "consumable", "description": "恢复法术能力。" },
+    { "id": "itm_helmet_iron", "name": "铁盔", "type": "equipment", "slot": "helmet", "description": "基础头部防具。" },
+    { "id": "itm_chest_steel", "name": "钢甲", "type": "equipment", "slot": "chest", "description": "提升护甲的胸部防具。" },
+    { "id": "itm_pants_guard", "name": "护腿", "type": "equipment", "slot": "pants", "description": "提供腿部防护。" },
+    { "id": "itm_shoes_leather", "name": "皮靴", "type": "equipment", "slot": "shoes", "description": "基础鞋类装备。" },
+    { "id": "itm_weapon_club", "name": "木棍", "type": "equipment", "slot": "weapon", "description": "初始近战武器。" },
+    { "id": "itm_weapon_blade", "name": "钢刃", "type": "equipment", "slot": "weapon", "description": "中级近战武器。" }
+  ]
+}
