@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>荒境纪元：现代文字生存</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: rgba(23, 30, 55, 0.72);
+        --panel-2: rgba(18, 24, 43, 0.72);
+        --line: rgba(129, 155, 255, 0.24);
+        --text: #ebf1ff;
+        --sub: #9cb0d9;
+        --primary: #6eb6ff;
+        --ok: #63d697;
+        --warn: #ffcb6b;
+        --danger: #ff7f9f;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--text);
+        font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+        background:
+          radial-gradient(circle at 12% 18%, #273e7f 0, transparent 32%),
+          radial-gradient(circle at 88% 8%, #1e5e72 0, transparent 28%),
+          linear-gradient(135deg, #090d18, #101932 45%, #0a1226);
+        min-height: 100vh;
+      }
+      .wrap { max-width: 1240px; margin: 18px auto 26px; padding: 0 14px; }
+      .hero {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 10px;
+      }
+      .hero h1 { margin: 0; font-size: 28px; letter-spacing: 0.4px; }
+      .hero .tip { color: var(--sub); font-size: 13px; }
+      .layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
+      @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 24px rgba(0,0,0,.26);
+      }
+      .card h2 { margin: 0 0 10px; font-size: 17px; }
+      .muted { color: var(--sub); }
+      .grid { display: grid; gap: 10px; }
+      .grid-2 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+      .grid-3 { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+      label { display: block; margin-bottom: 4px; color: var(--sub); font-size: 13px; }
+      input, select, button {
+        width: 100%; border-radius: 10px; border: 1px solid #45547d;
+        background: #141d34; color: var(--text); padding: 10px;
+      }
+      button {
+        cursor: pointer; transition: .15s; font-weight: 600;
+        background: linear-gradient(180deg, #1d2b4d, #182541);
+      }
+      button:hover:enabled { border-color: #7abfff; transform: translateY(-1px); }
+      button:disabled { opacity: .5; cursor: not-allowed; }
+      .primary { background: linear-gradient(180deg, #2b4f7b, #20466f); }
+      .actions { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
+      .status { line-height: 1.8; font-size: 14px; }
+      .tag { color: var(--primary); font-weight: 600; }
+      .pill { display:inline-block; padding: 2px 8px; border:1px solid #44649e; border-radius:999px; color:#b9d5ff; font-size:12px; }
+      .list { line-height: 1.8; font-size: 14px; }
+      .split { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; }
+      .log {
+        height: 300px; overflow: auto; white-space: pre-wrap;
+        background: var(--panel-2); border-radius: 10px; border: 1px solid #30476f; padding: 10px;
+      }
+      .ok { color: var(--ok); }
+      .warn { color: var(--warn); }
+      .danger { color: var(--danger); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="hero">
+        <h1>荒境纪元：现代文字生存</h1>
+        <div class="tip">开局只需：命名 + 天赋</div>
+      </div>
+
+      <section class="card" id="setupPanel">
+        <h2>角色创建</h2>
+        <div class="grid grid-2">
+          <div>
+            <label for="name">角色名称</label>
+            <input id="name" placeholder="无名旅者" />
+          </div>
+          <div>
+            <label for="talent">初始天赋（不再开局选职业）</label>
+            <select id="talent">
+              <option value="survival">荒野求生（食物获取更高）</option>
+              <option value="forge">锻造直觉（铁/煤炭获取更高）</option>
+              <option value="arcane">灵能体质（魔法与研究效率提升）</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:10px"><button class="primary" id="startBtn">进入荒境</button></div>
+      </section>
+
+      <div class="layout" id="gameArea" style="display:none">
+        <div class="stack">
+          <section class="card">
+            <h2>生存状态</h2>
+            <div id="status" class="status"></div>
+          </section>
+
+          <section class="card">
+            <h2>行动面板</h2>
+            <div class="actions">
+              <button data-action="joinFaction">加入阵营（2h）</button>
+              <button data-action="wood">砍树（2h）</button>
+              <button data-action="food">采集（2h）</button>
+              <button data-action="mine">采矿（3h）</button>
+              <button data-action="farm">建设农田（3h）</button>
+              <button data-action="shelter">升级庇护所（4h）</button>
+              <button data-action="bench">建立科研台（4h）</button>
+              <button data-action="research">研发科技（4h）</button>
+              <button data-action="train">训练（2h）</button>
+            </div>
+
+            <div class="grid grid-2" style="margin-top:10px">
+              <div>
+                <label for="adventureLocation">外出目的地（固定 4h）</label>
+                <select id="adventureLocation">
+                  <option value="town">灰石城镇（NPC交互）</option>
+                  <option value="frozenLake">霜裂湖</option>
+                  <option value="greenForest">青杉林地</option>
+                  <option value="ruins">古代遗迹</option>
+                  <option value="orcCamp">兽人营地</option>
+                  <option value="ironMine">黑岩铁矿</option>
+                </select>
+              </div>
+              <div>
+                <label>&nbsp;</label>
+                <button data-action="adventure" class="primary">出发冒险</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>事件日志</h2>
+            <div id="log" class="log"></div>
+          </section>
+        </div>
+
+        <div class="stack">
+          <section class="card">
+            <h2>资源与装备</h2>
+            <div id="resources" class="list"></div>
+            <hr style="border-color:#2f436e;opacity:.4"/>
+            <div id="equipment" class="list"></div>
+          </section>
+
+          <section class="card">
+            <h2>建筑与科技</h2>
+            <div id="buildings" class="list"></div>
+          </section>
+
+          <section class="card">
+            <h2>NPC 与物品清单（外部文件）</h2>
+            <div class="split">
+              <div>
+                <div class="pill">NPC.json</div>
+                <div id="npcPanel" class="list"></div>
+              </div>
+              <div>
+                <div class="pill">ITEM.json</div>
+                <div id="itemPanel" class="list"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const FALLBACK_NPC = {
+        town: [{ name: '格罗姆·铁砧' }, { name: '艾琳·雾瓶' }, { name: '维托·灰纹' }],
+        faction_hq: {
+          '晨光同盟': { base: '晨辉堡', mentor: { name: '塞拉·晨歌' } },
+          '钢铁部族': { base: '钢鬃要塞', mentor: { name: '巴洛克·碎岩' } },
+          '暮影议会': { base: '暮影秘院', mentor: { name: '奈莎·夜纱' } },
+        }
+      };
+      const FALLBACK_ITEMS = { items: [{ id: 'itm_wood', name: '木头' }, { id: 'itm_iron', name: '铁' }] };
+
+      const state = {
+        data: { npc: FALLBACK_NPC, item: FALLBACK_ITEMS },
+        p: null,
+      };
+      const seasons = ['春', '夏', '秋', '冬'];
+
+      const statusEl = document.getElementById('status');
+      const resourcesEl = document.getElementById('resources');
+      const equipmentEl = document.getElementById('equipment');
+      const buildingsEl = document.getElementById('buildings');
+      const npcPanel = document.getElementById('npcPanel');
+      const itemPanel = document.getElementById('itemPanel');
+      const logEl = document.getElementById('log');
+      const adventureLocationEl = document.getElementById('adventureLocation');
+
+      function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+      async function loadExternalData() {
+        try {
+          const [npcRes, itemRes] = await Promise.all([
+            fetch('./NPC.json'), fetch('./ITEM.json')
+          ]);
+          if (npcRes.ok) state.data.npc = await npcRes.json();
+          if (itemRes.ok) state.data.item = await itemRes.json();
+        } catch (_) {
+          // 直接 file:// 打开时 fetch 可能失败，继续使用 fallback。
+        }
+      }
+
+      function log(msg, cls = '') {
+        const d = document.createElement('div');
+        if (cls) d.classList.add(cls);
+        d.textContent = msg;
+        logEl.appendChild(d);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      function nowHour() { return state.p.totalHours % 24; }
+      function hourText() { return `${String(nowHour()).padStart(2, '0')}:00`; }
+      function isNight() { const h = nowHour(); return h < 6 || h >= 20; }
+      function updateSeason() {
+        const day = Math.floor(state.p.totalHours / 24) + 1;
+        state.p.day = day;
+        state.p.season = seasons[Math.floor(((day - 1) % 40) / 10)];
+      }
+
+      function passTime(hours) {
+        state.p.totalHours += hours;
+        updateSeason();
+        const settleDays = Math.floor(state.p.totalHours / 24) - state.p.lastSettleDay;
+        for (let i = 0; i < settleDays; i++) dailySettle();
+        state.p.lastSettleDay += Math.max(0, settleDays);
+      }
+
+      function dailySettle() {
+        const p = state.p;
+        const consume = Math.max(3, 6 - p.farmland);
+        p.res.food -= consume;
+        log(`日终结算：食物 -${consume}`);
+        if (p.res.food < 0) {
+          p.hp += p.res.food;
+          p.res.food = 0;
+          log('食物不足导致生命下降。', 'warn');
+        }
+        if (p.day % 3 === 0 && p.farmland > 0) {
+          if (p.season === '冬') log('冬季农田冻结，无法收获。', 'warn');
+          else {
+            const gain = p.farmland * rand(2, 4);
+            p.res.food += gain;
+            log(`农田收获：食物 +${gain}`, 'ok');
+          }
+        }
+      }
+
+      function applyEquipBonus() {
+        const e = state.p.equip;
+        state.p.armor = (e.helmet ? 2 : 0) + (e.chest ? 4 : 0) + (e.pants ? 3 : 0) + (e.shoes ? 1 : 0);
+      }
+
+      function renderMetaPanels() {
+        const townNpcs = state.data.npc.town || [];
+        npcPanel.innerHTML = townNpcs.map(n => `${n.name}｜${n.skill || '—'}<br><span class="muted">${n.description || ''}</span>`).join('<br><br>') || '暂无';
+        itemPanel.innerHTML = (state.data.item.items || []).slice(0, 10).map(i => `${i.id}：${i.name}`).join('<br>') || '暂无';
+      }
+
+      function render() {
+        const p = state.p;
+        const hq = p.faction ? (state.data.npc.faction_hq?.[p.faction]?.base || '未知') : '未加入';
+        statusEl.innerHTML = `
+          <div>时间：<span class="tag">第 ${p.day} 天 ${hourText()}</span>｜季节：<span class="tag">${p.season}</span>｜昼夜：<span class="tag">${isNight() ? '夜晚' : '白天'}</span></div>
+          <div>姓名：${p.name}｜天赋：${p.talentName}｜阵营：${p.faction || '未加入'}｜大本营：${hq}</div>
+          <div>生命：${p.hp}｜护甲：${p.armor}｜武力：${p.atk}｜魔法：${p.mag}｜金币：${p.gold}</div>
+          <div>环境：霜裂湖 ${p.season === '冬' ? '结冰' : '未结冰'}</div>
+        `;
+
+        resourcesEl.innerHTML = `
+          木头：${p.res.wood}<br>
+          食物：${p.res.food}<br>
+          铁：${p.res.iron}<br>
+          煤炭：${p.res.coal}<br>
+          硝石：${p.res.niter}
+        `;
+        equipmentEl.innerHTML = `
+          武器：${p.equip.weapon || '木棍'}<br>
+          头盔：${p.equip.helmet || '无'}<br>
+          胸甲：${p.equip.chest || '无'}<br>
+          裤子：${p.equip.pants || '无'}<br>
+          鞋子：${p.equip.shoes || '无'}
+        `;
+        buildingsEl.innerHTML = `
+          庇护所：${p.shelter} 级<br>
+          农田：${p.farmland} 级<br>
+          科研台：${p.buildings.bench ? '已建成' : '未建成'}<br>
+          科技等级：${p.techLevel}<br>
+          已研发：${[...p.techs].join('、') || '无'}
+        `;
+      }
+
+      function startGame() {
+        const name = document.getElementById('name').value.trim() || '无名旅者';
+        const talent = document.getElementById('talent').value;
+        const p = {
+          name,
+          talent,
+          talentName: talent === 'survival' ? '荒野求生' : talent === 'forge' ? '锻造直觉' : '灵能体质',
+          faction: null,
+          totalHours: 7,
+          lastSettleDay: 0,
+          day: 1,
+          season: '春',
+          hp: 100,
+          armor: 0,
+          atk: 8,
+          mag: 8,
+          gold: 30,
+          res: { wood: 6, food: 10, iron: 0, coal: 0, niter: 0 },
+          equip: { weapon: '木棍', helmet: null, chest: null, pants: null, shoes: null },
+          buildings: { bench: false },
+          shelter: 0,
+          farmland: 0,
+          techLevel: 0,
+          techs: new Set(),
+        };
+        if (talent === 'survival') p.res.food += 4;
+        if (talent === 'forge') p.res.iron += 2;
+        if (talent === 'arcane') p.mag += 2;
+
+        state.p = p;
+        updateSeason();
+        applyEquipBonus();
+        document.getElementById('setupPanel').style.display = 'none';
+        document.getElementById('gameArea').style.display = 'grid';
+        log('你醒来在荒境边缘。先选择阵营，再决定未来道路。', 'ok');
+        renderMetaPanels();
+        render();
+      }
+
+      function joinFaction() {
+        const p = state.p;
+        if (p.faction) {
+          log(`你已加入 ${p.faction}。`, 'warn');
+          return;
+        }
+        const pick = prompt('选择阵营：1 晨光同盟 / 2 钢铁部族 / 3 暮影议会', '1');
+        if (!pick) return;
+        if (pick === '1') {
+          p.faction = '晨光同盟'; p.hp += 8; p.techs.add('守护祷言');
+        } else if (pick === '2') {
+          p.faction = '钢铁部族'; p.atk += 3; p.techs.add('狂战怒吼');
+        } else {
+          p.faction = '暮影议会'; p.mag += 3; p.techs.add('暗影导引');
+        }
+        log(`你已加入 ${p.faction}，并在大本营学习了初阶阵营技能。`, 'ok');
+        passTime(2);
+      }
+
+      function actWood() {
+        const p = state.p;
+        let gain = rand(4, 8);
+        if (p.techs.has('伐木术')) gain += 2;
+        p.res.wood += gain;
+        log(`砍树完成：木头 +${gain}（2h）`);
+        passTime(2);
+      }
+      function actFood() {
+        const p = state.p;
+        let gain = rand(3, 7);
+        if (p.talent === 'survival') gain += 2;
+        p.res.food += gain;
+        log(`采集完成：食物 +${gain}（2h）`);
+        passTime(2);
+      }
+      function actMine() {
+        const p = state.p;
+        let iron = rand(1, 4), coal = rand(1, 3), niter = rand(0, 2);
+        if (p.talent === 'forge') { iron += 1; coal += 1; }
+        p.res.iron += iron; p.res.coal += coal; p.res.niter += niter;
+        log(`采矿完成：铁 +${iron}，煤炭 +${coal}，硝石 +${niter}（3h）`);
+        passTime(3);
+      }
+      function actFarm() {
+        const p = state.p;
+        const need = 6 + p.farmland * 2;
+        if (p.res.wood < need || p.res.food < 2) return log(`农田扩建需要 木头${need}+食物2`, 'warn');
+        p.res.wood -= need; p.res.food -= 2; p.farmland += 1;
+        log(`农田升级到 ${p.farmland} 级（3h）`, 'ok');
+        passTime(3);
+      }
+      function actShelter() {
+        const p = state.p;
+        const need = 10 + p.shelter * 4;
+        if (p.res.wood < need || p.res.coal < 1) return log(`庇护所升级需要 木头${need}+煤炭1`, 'warn');
+        p.res.wood -= need; p.res.coal -= 1; p.shelter += 1; p.hp += 10;
+        log(`庇护所升级至 ${p.shelter} 级（4h）`, 'ok');
+        passTime(4);
+      }
+      function actBench() {
+        const p = state.p;
+        if (p.buildings.bench) return log('科研台已建成。', 'warn');
+        if (p.res.wood < 12 || p.res.iron < 4 || p.res.coal < 2) return log('科研台需要：木头12、铁4、煤炭2', 'warn');
+        p.res.wood -= 12; p.res.iron -= 4; p.res.coal -= 2; p.buildings.bench = true; p.techLevel += 1;
+        log('科研台建成，科技研发解锁（4h）', 'ok');
+        passTime(4);
+      }
+      function actResearch() {
+        const p = state.p;
+        if (!p.buildings.bench) return log('请先建立科研台。', 'warn');
+        if (p.res.iron < 3 || p.res.coal < 2 || p.res.niter < 1 || p.gold < 8) return log('研发需要：铁3、煤炭2、硝石1、金币8', 'warn');
+        p.res.iron -= 3; p.res.coal -= 2; p.res.niter -= 1; p.gold -= 8;
+        const pool = ['伐木术', '农业改良', '冶炼工艺', '火药学'];
+        const next = pool.find((x) => !p.techs.has(x));
+        if (!next) { log('核心科技已满，转化为经验记录。', 'ok'); passTime(4); return; }
+        p.techs.add(next); p.techLevel += 1;
+        if (next === '农业改良') p.farmland += 1;
+        if (next === '火药学') p.atk += 2;
+        if (next === '冶炼工艺') p.res.iron += 2;
+        log(`研发成功：${next}（4h）`, 'ok');
+        passTime(4);
+      }
+      function actTrain() {
+        const p = state.p;
+        if (!p.faction) return log('请先加入阵营后再接受训练。', 'warn');
+        if (p.faction === '晨光同盟') { p.hp += 4; p.mag += 1; log('晨光训练：生命+4 魔法+1（2h）'); }
+        else if (p.faction === '钢铁部族') { p.atk += 2; log('部族训练：武力+2（2h）'); }
+        else { p.mag += 2; log('暮影训练：魔法+2（2h）'); }
+        passTime(2);
+      }
+
+      function townAdventure() {
+        const p = state.p;
+        const npcs = state.data.npc.town || [];
+        log(`你抵达灰石城镇，遇见 NPC：${npcs.map(n => n.name).join('、') || '居民们'}。`);
+        if (p.gold >= 10 && !p.equip.helmet) {
+          p.gold -= 10; p.equip.helmet = '铁盔';
+          log('铁匠为你打造了铁盔。', 'ok');
+        }
+        if (p.gold >= 14 && !p.equip.chest) {
+          p.gold -= 14; p.equip.chest = '钢甲';
+          log('铁匠为你打造了钢甲。', 'ok');
+        }
+        if (p.gold >= 12 && p.equip.weapon !== '钢刃') {
+          p.gold -= 12; p.equip.weapon = '钢刃'; p.atk += 2;
+          log('你购入钢刃，武力 +2。', 'ok');
+        }
+        if (p.gold >= 8 && !p.equip.shoes) {
+          p.gold -= 8; p.equip.shoes = '皮靴';
+          log('药师给你配发皮靴。', 'ok');
+        }
+        if (p.gold >= 6) {
+          p.gold -= 6; p.res.food += 3;
+          log('镇长安排补给：食物 +3。', 'ok');
+        }
+      }
+
+      function battleAdventure(location) {
+        const p = state.p;
+        const map = {
+          frozenLake: { n: '霜裂湖', base: 11, win: () => {
+            if (p.season === '冬') { p.res.niter += 1; log('冬季结冰，你采得硝石 +1。', 'ok'); }
+            else { p.res.food += 3; log('你捕鱼成功，食物 +3。', 'ok'); }
+          } },
+          greenForest: { n: '青杉林地', base: 13, win: () => { p.res.wood += 5; log('林地收获，木头 +5。', 'ok'); } },
+          ruins: { n: '古代遗迹', base: 16, win: () => { p.gold += 12; log('遗迹回收，金币 +12。', 'ok'); } },
+          orcCamp: { n: '兽人营地', base: 18, win: () => { p.gold += 15; p.res.iron += 2; log('缴获资源，金币+15 铁+2。', 'ok'); } },
+          ironMine: { n: '黑岩铁矿', base: 15, win: () => { p.res.iron += 4; p.res.coal += 2; log('矿道探索，铁+4 煤炭+2。', 'ok'); } }
+        };
+        const c = map[location];
+        let enemy = rand(c.base, c.base + 12);
+        if (isNight()) enemy += 3;
+        const power = p.atk + Math.floor(p.mag / 2) + (p.equip.weapon === '钢刃' ? 2 : 0) + rand(0, 8);
+        log(`你前往【${c.n}】冒险，敌战力 ${enemy}，你判定 ${power}。`);
+        if (power >= enemy) {
+          const g = rand(6, 14); p.gold += g; log(`战斗获胜，金币 +${g}。`, 'ok'); c.win();
+        } else {
+          const dmg = Math.max(4, rand(8, 18) - p.armor); p.hp -= dmg; log(`冒险失利，生命 -${dmg}。`, 'danger');
+        }
+      }
+
+      function actAdventure() {
+        const loc = adventureLocationEl.value;
+        if (loc === 'town') townAdventure(); else battleAdventure(loc);
+        passTime(4);
+      }
+
+      function checkEnd() {
+        const p = state.p;
+        if (p.hp <= 0) {
+          log('你倒在荒境，游戏结束。', 'danger');
+          document.querySelectorAll('[data-action]').forEach(b => b.disabled = true);
+        }
+      }
+
+      function doAction(action) {
+        if (!state.p) return;
+        if (action === 'joinFaction') joinFaction();
+        if (action === 'wood') actWood();
+        if (action === 'food') actFood();
+        if (action === 'mine') actMine();
+        if (action === 'farm') actFarm();
+        if (action === 'shelter') actShelter();
+        if (action === 'bench') actBench();
+        if (action === 'research') actResearch();
+        if (action === 'train') actTrain();
+        if (action === 'adventure') actAdventure();
+        applyEquipBonus();
+        checkEnd();
+        render();
+      }
+
+      document.getElementById('startBtn').addEventListener('click', startGame);
+      document.querySelectorAll('[data-action]').forEach(b => b.addEventListener('click', () => doAction(b.dataset.action)));
+
+      loadExternalData().then(renderMetaPanels);
+    </script>
+  </body>
+</html>

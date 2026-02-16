@@ -1,0 +1,60 @@
+{
+  "town": [
+    {
+      "id": "npc_town_blacksmith",
+      "name": "格罗姆·铁砧",
+      "title": "灰石城铁匠",
+      "skill": "锻造精炼",
+      "description": "可为冒险者打造和强化头盔、胸甲、武器。",
+      "services": ["锻造铁盔", "锻造钢刃", "修理装备"]
+    },
+    {
+      "id": "npc_town_alchemist",
+      "name": "艾琳·雾瓶",
+      "title": "灰石城药师",
+      "skill": "药剂调和",
+      "description": "擅长炼制恢复药与元素试剂。",
+      "services": ["制作治疗药剂", "制作法力药剂", "交换草药"]
+    },
+    {
+      "id": "npc_town_mayor",
+      "name": "维托·灰纹",
+      "title": "灰石城镇长",
+      "skill": "治安统筹",
+      "description": "发布城镇委托，按声望结算金币与资源奖励。",
+      "services": ["城镇委托", "补给配发", "声望奖励"]
+    }
+  ],
+  "faction_hq": {
+    "晨光同盟": {
+      "base": "晨辉堡",
+      "mentor": {
+        "id": "npc_hq_dawn",
+        "name": "塞拉·晨歌",
+        "skill": "圣辉守护",
+        "description": "学习后可提升生存与防御能力。",
+        "services": ["守护祷言", "战地急救", "光盾训练"]
+      }
+    },
+    "钢铁部族": {
+      "base": "钢鬃要塞",
+      "mentor": {
+        "id": "npc_hq_iron",
+        "name": "巴洛克·碎岩",
+        "skill": "狂战战技",
+        "description": "学习后可显著提升近战攻击能力。",
+        "services": ["狂战怒吼", "重斧技法", "耐力冲锋"]
+      }
+    },
+    "暮影议会": {
+      "base": "暮影秘院",
+      "mentor": {
+        "id": "npc_hq_twilight",
+        "name": "奈莎·夜纱",
+        "skill": "暗影奥术",
+        "description": "学习后可增强法术输出与控制。",
+        "services": ["暗影导引", "虚空刻印", "灵能专注"]
+      }
+    }
+  }
+}
