@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>荒境纪元</title>
+  <style>
+    :root{--bg:#0a1022;--card:#131d39cc;--line:#3f568f;--txt:#eaf1ff;--sub:#a8b9e6;--ok:#69db9d;--warn:#ffd36b}
+    *{box-sizing:border-box} body{margin:0;color:var(--txt);font-family:Inter,"Microsoft YaHei",sans-serif;background:radial-gradient(circle at 10% 10%,#244078,transparent 32%),linear-gradient(140deg,#090e1b,#0f1a35)}
+    .wrap{max-width:1260px;margin:16px auto;padding:0 12px}.card{background:var(--card);backdrop-filter:blur(8px);border:1px solid #3c4f83;border-radius:16px;padding:12px;margin-bottom:10px}
+    .grid{display:grid;gap:10px}.g2{grid-template-columns:1.2fr .8fr}@media(max-width:980px){.g2{grid-template-columns:1fr}}
+    h1,h2,h3{margin:0 0 8px} .sub{color:var(--sub);font-size:13px}
+    input,select,button{width:100%;padding:10px;border-radius:10px;border:1px solid #4d649f;background:#142247;color:var(--txt)} button{cursor:pointer;font-weight:600}
+    button:hover:enabled{border-color:#7eb6ff} button:disabled{opacity:.55;cursor:not-allowed}
+    .actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px} .status{line-height:1.8;font-size:14px}.tag{color:#86beff}
+    .sceneTabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px} .scene{display:none}.scene.active{display:block}
+    .log{height:250px;overflow:auto;white-space:pre-wrap;background:#0d1730;border:1px solid #3a5187;border-radius:10px;padding:10px}
+    .list{line-height:1.8;font-size:14px} .ok{color:var(--ok)} .warn{color:var(--warn)}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <section class="card" id="setupPanel">
+    <h1>荒境纪元</h1>
+    <div class="sub">开局：命名 + 天赋。职业与发展路线在游戏内加入阵营后决定。</div>
+    <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:8px">
+      <div><label>名字</label><input id="name" placeholder="无名旅者"/></div>
+      <div><label>天赋</label><select id="talent"><option value="survival">荒野求生</option><option value="forge">锻造直觉</option><option value="arcane">灵能体质</option></select></div>
+    </div>
+    <div style="margin-top:10px"><button id="startBtn">进入游戏</button></div>
+  </section>
+
+  <div id="gameArea" class="grid g2" style="display:none">
+    <div>
+      <section class="card"><h2>状态</h2><div id="status" class="status"></div></section>
+      <section class="card">
+        <h2>场景切换</h2>
+        <div class="sceneTabs">
+          <button data-scene="home">家园</button>
+          <button data-scene="BFYK">BFYK（大本营）</button>
+          <button data-scene="IGVF">IGVF（城镇）</button>
+          <button data-scene="wild">野外地点</button>
+        </div>
+      </section>
+
+      <section class="card scene active" id="scene-home">
+        <h3>家园（可建造与互动）</h3>
+        <div class="actions">
+          <button data-action="buildBed">建造床铺</button>
+          <button data-action="buildCompost">建造堆肥筒</button>
+          <button data-action="buildWell">建造水井</button>
+          <button data-action="buildKitchen">建造厨房</button>
+          <button data-action="useBed">休息（+休息）</button>
+          <button data-action="useWell">取水并饮用</button>
+          <button data-action="useKitchen">烹饪食物</button>
+          <button data-action="compost">处理堆肥</button>
+        </div>
+      </section>
+
+      <section class="card scene" id="scene-BFYK">
+        <h3>BFYK（大本营）</h3>
+        <div class="sub">加入阵营并学习技能。每次操作会推进时间。</div>
+        <div class="actions">
+          <button data-action="joinFaction">加入阵营</button>
+          <button data-action="hqSkill">学习阵营技能</button>
+          <button data-action="train">训练</button>
+        </div>
+      </section>
+
+      <section class="card scene" id="scene-IGVF">
+        <h3>IGVF（城镇）</h3>
+        <div id="npcInfo" class="list"></div>
+        <div class="actions" style="margin-top:8px">
+          <button data-action="townBlacksmith">铁匠服务</button>
+          <button data-action="townAlchemist">药师服务</button>
+          <button data-action="townMayor">镇长委托</button>
+        </div>
+      </section>
+
+      <section class="card scene" id="scene-wild">
+        <h3>野外地点</h3>
+        <div class="grid" style="grid-template-columns:1fr 220px">
+          <div><label>目的地</label><select id="location"><option value="frozenLake">霜裂湖</option><option value="greenForest">青杉林地</option><option value="ruins">古代遗迹</option><option value="orcCamp">兽人营地</option><option value="ironMine">黑岩铁矿</option><option value="town">灰石城镇（IGVF）</option></select></div>
+          <div><label>&nbsp;</label><button data-action="travel">前往地点（4h）</button></div>
+        </div>
+        <div class="actions" style="margin-top:8px">
+          <button data-action="cutWood">伐木（需斧头）</button>
+          <button data-action="mine">挖矿（需镐子）</button>
+          <button data-action="farm">种地（需锄头）</button>
+          <button data-action="research">研发科技</button>
+        </div>
+      </section>
+
+      <section class="card"><h2>日志</h2><div id="log" class="log"></div></section>
+    </div>
+
+    <div>
+      <section class="card"><h2>资源与需求</h2><div id="resources" class="list"></div></section>
+      <section class="card"><h2>物品栏（可交互）</h2><div id="inventory" class="list"></div><div class="sub">点击按钮可使用食物/饮品或装备穿戴。</div></section>
+      <section class="card"><h2>装备与耐久</h2><div id="equip" class="list"></div></section>
+      <section class="card"><h2>科技树（木→铁→钢）</h2><div id="tech" class="list"></div></section>
+    </div>
+  </div>
+</div>
+
+<script>
+const state = {npc:null,item:null,p:null,scene:'home'};
+const seasons=['春','夏','秋','冬'];
+const $=s=>document.querySelector(s);
+const log=(m,c='')=>{const d=document.createElement('div');if(c)d.className=c;d.textContent=m;$('#log').appendChild(d);$('#log').scrollTop=$('#log').scrollHeight;};
+const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const findItemByName=(name)=>state.item.items.find(i=>i.name===name);
+
+async function loadData(){
+  const [n,i]=await Promise.all([fetch('./NPC.json').then(r=>r.json()).catch(()=>({town:[]})),fetch('./ITEM.json').then(r=>r.json()).catch(()=>({items:[]}))]);
+  state.npc=n;state.item=i;
+  renderNPC();
+}
+
+function initPlayer(){
+  const talent=$('#talent').value;
+  const p={
+    name:$('#name').value.trim()||'无名旅者',talent,faction:null,hqSkill:0,
+    hp:100,atk:8,mag:8,armor:0,gold:30,
+    hunger:100,thirst:100,rest:100,
+    day:1,totalHours:8,lastSettleDay:0,season:'春',
+    res:{wood:8,food:8,water:4,iron:0,coal:0,steel:0,niter:0},
+    buildings:{bed:false,compost:false,well:false,kitchen:false,bench:false},
+    tech:{wood:false,iron:false,steel:false},
+    inv:{'面包':2,'井水':1,'粗木斧':1,'粗木镐':1,'木棍':1},
+    equip:{weapon:'木棍',helmet:null,chest:null,pants:null,shoes:null,toolAxe:'粗木斧',toolPick:'粗木镐',toolHoe:null},
+    durability:{'粗木斧':60,'粗木镐':60,'粗木锄':70,'木棍':80,'精铁剑':120,'远古剑':180,'铁甲':120,'皮帽':80,'护腿':100,'皮靴':90}
+  };
+  if(talent==='survival') p.res.food+=3;
+  if(talent==='forge') p.res.iron+=1;
+  if(talent==='arcane') p.mag+=2;
+  state.p=p;
+}
+
+function updateTime(h){state.p.totalHours+=h;const d=Math.floor(state.p.totalHours/24)+1;state.p.day=d;state.p.season=seasons[Math.floor(((d-1)%40)/10)];const settle=Math.floor(state.p.totalHours/24)-state.p.lastSettleDay;for(let i=0;i<settle;i++)dailySettle();state.p.lastSettleDay+=Math.max(0,settle);}
+function dailySettle(){const p=state.p;p.hunger=Math.max(0,p.hunger-14);p.thirst=Math.max(0,p.thirst-16);p.rest=Math.max(0,p.rest-12);if(p.hunger<25||p.thirst<25||p.rest<20){p.hp-=6;log('你因饥饿/口渴/疲劳受损生命 -6','warn');}if(p.day%3===0&&p.buildings.compost)p.res.food+=2;if(p.day%3===0&&p.season!=='冬'&&p.tech.wood)p.res.food+=2;}
+function applyArmor(){const p=state.p;let a=0; if(p.equip.helmet)a+=1;if(p.equip.chest)a+=3;if(p.equip.pants)a+=2;if(p.equip.shoes)a+=1;p.armor=a;}
+function useDurability(name,amount){if(!state.p.durability[name]&&state.p.durability[name]!==0)return true;state.p.durability[name]-=amount;if(state.p.durability[name]<=0){state.p.durability[name]=0;log(`${name} 已损坏。`,'warn');if(state.p.equip.toolAxe===name)state.p.equip.toolAxe=null;if(state.p.equip.toolPick===name)state.p.equip.toolPick=null;if(state.p.equip.toolHoe===name)state.p.equip.toolHoe=null;if(state.p.equip.weapon===name)state.p.equip.weapon='木棍';}return state.p.durability[name]>0;}
+
+function renderNPC(){if(!state.npc)return;const t=state.npc.town||[];$('#npcInfo').innerHTML=t.map(n=>`<b>${n.name}</b>｜${n.skill}<br><span class='sub'>${n.description}</span>`).join('<br><br>');}
+
+function inventoryButtons(){
+  const p=state.p;const keys=Object.keys(p.inv); if(!keys.length)return '（空）';
+  return keys.map(k=>`${k} × ${p.inv[k]} <button data-use="${k}" style="width:auto;padding:4px 8px;margin-left:8px">使用/装备</button>`).join('<br>');
+}
+
+function render(){
+  const p=state.p;applyArmor();
+  $('#status').innerHTML=`时间：<span class='tag'>第 ${p.day} 天 ${String(p.totalHours%24).padStart(2,'0')}:00</span>｜季节：<span class='tag'>${p.season}</span><br>姓名：${p.name}｜天赋：${$('#talent').selectedOptions[0].text}｜阵营：${p.faction||'未加入'}<br>生命：${p.hp}｜武力：${p.atk}｜魔法：${p.mag}｜护甲：${p.armor}｜金币：${p.gold}`;
+  $('#resources').innerHTML=`需求：饥饿 ${p.hunger}/100｜口渴 ${p.thirst}/100｜休息 ${p.rest}/100<br>木头 ${p.res.wood}｜食物 ${p.res.food}｜清水 ${p.res.water}｜铁矿 ${p.res.iron}｜煤炭 ${p.res.coal}｜钢锭 ${p.res.steel}｜硝石 ${p.res.niter}`;
+  $('#inventory').innerHTML=inventoryButtons();
+  $('#equip').innerHTML=`武器：${p.equip.weapon||'无'}（耐久 ${p.durability[p.equip.weapon]??'-'}）<br>斧头：${p.equip.toolAxe||'无'}（耐久 ${p.durability[p.equip.toolAxe]??'-'}）<br>镐子：${p.equip.toolPick||'无'}（耐久 ${p.durability[p.equip.toolPick]??'-'}）<br>锄头：${p.equip.toolHoe||'无'}（耐久 ${p.durability[p.equip.toolHoe]??'-'}）<br>头盔：${p.equip.helmet||'无'}｜胸甲：${p.equip.chest||'无'}｜裤子：${p.equip.pants||'无'}｜鞋子：${p.equip.shoes||'无'}`;
+  $('#tech').innerHTML=`木器时代：${p.tech.wood?'已完成':'未完成'}<br>铁器时代：${p.tech.iron?'已完成':'未完成'}<br>钢铁时代：${p.tech.steel?'已完成':'未完成'}<br>科研台：${p.buildings.bench?'已建成':'未建成'}`;
+  document.querySelectorAll('#inventory button[data-use]').forEach(b=>b.onclick=()=>useInventoryItem(b.dataset.use));
+}
+
+function switchScene(scene){state.scene=scene;document.querySelectorAll('.scene').forEach(s=>s.classList.remove('active'));$(`#scene-${scene}`).classList.add('active');}
+
+function build(name,need,hours,key,msg){const p=state.p;if(p.buildings[key])return log(`${name} 已建成。`,'warn');if(p.res.wood<need)return log(`${name} 需要木头 ${need}`,'warn');p.res.wood-=need;p.buildings[key]=true;log(msg,'ok');updateTime(hours);}
+function useInventoryItem(name){const p=state.p;if(!p.inv[name])return;
+  if(name==='面包'||name==='烤肉'||name==='炖汤'){p.inv[name]-=1;if(p.inv[name]<=0)delete p.inv[name];p.hunger=Math.min(100,p.hunger+24);if(name==='炖汤')p.thirst=Math.min(100,p.thirst+6);log(`食用了 ${name}`,'ok');}
+  else if(name==='井水'||name==='草药茶'){p.inv[name]-=1;if(p.inv[name]<=0)delete p.inv[name];p.thirst=Math.min(100,p.thirst+25);if(name==='草药茶')p.rest=Math.min(100,p.rest+6);log(`饮用了 ${name}`,'ok');}
+  else {
+    const item=findItemByName(name); if(!item||!item.slot) return log(`${name} 不能直接使用。`,'warn');
+    p.equip[item.slot]=name; log(`已装备 ${name}。`,'ok');
+  }
+  render();
+}
+
+function action(type){const p=state.p;
+  if(type==='joinFaction'){if(p.faction)return log('已加入阵营。','warn');const v=prompt('1 晨光同盟 / 2 钢铁部族 / 3 暮影议会','1');if(!v)return; if(v==='1'){p.faction='晨光同盟';p.hp+=8;} else if(v==='2'){p.faction='钢铁部族';p.atk+=3;} else {p.faction='暮影议会';p.mag+=3;}log(`加入 ${p.faction}。`,'ok');updateTime(2)}
+  if(type==='hqSkill'){if(!p.faction)return log('先加入阵营。','warn');if(p.gold<10)return log('学习技能需 10 金币。','warn');p.gold-=10;p.hqSkill++;if(p.faction==='晨光同盟')p.hp+=5;else if(p.faction==='钢铁部族')p.atk+=2;else p.mag+=2;log('在 BFYK 学习阵营技能。','ok');updateTime(2)}
+  if(type==='train'){if(!p.faction)return log('先加入阵营。','warn');if(p.faction==='钢铁部族')p.atk+=2;else if(p.faction==='暮影议会')p.mag+=2;else {p.hp+=3;p.mag+=1;}p.rest=Math.max(0,p.rest-8);updateTime(2);log('训练完成。')}
+
+  if(type==='buildBed')build('床铺',8,2,'bed','床铺建成。可休息。');
+  if(type==='buildCompost')build('堆肥筒',6,2,'compost','堆肥筒建成。可产出肥料收益。');
+  if(type==='buildWell')build('水井',10,3,'well','水井建成。可取水。');
+  if(type==='buildKitchen')build('厨房',12,3,'kitchen','厨房建成。可烹饪。');
+  if(type==='useBed'){if(!p.buildings.bed)return log('先建造床铺。','warn');p.rest=Math.min(100,p.rest+38);p.hp=Math.min(120,p.hp+6);updateTime(6);log('你在床铺上休息。','ok');}
+  if(type==='useWell'){if(!p.buildings.well)return log('先建造水井。','warn');p.res.water+=2;p.thirst=Math.min(100,p.thirst+20);p.inv['井水']=(p.inv['井水']||0)+1;updateTime(1);log('从水井取水并饮用。','ok');}
+  if(type==='useKitchen'){if(!p.buildings.kitchen)return log('先建造厨房。','warn');if(p.res.food<2)return log('烹饪需要食物 2。','warn');p.res.food-=2;p.inv['炖汤']=(p.inv['炖汤']||0)+1;updateTime(2);log('厨房制作了炖汤。','ok');}
+  if(type==='compost'){if(!p.buildings.compost)return log('先建造堆肥筒。','warn');p.res.food+=1;updateTime(1);log('处理堆肥，额外食物 +1。','ok');}
+
+  if(type==='travel'){const loc=$('#location').value;updateTime(4);if(loc==='town'){switchScene('IGVF');log('你到达城镇，切换到 IGVF 界面。','ok')}else{switchScene('wild');log(`你抵达 ${$('#location').selectedOptions[0].text}。`)}}
+  if(type==='cutWood'){if(!p.equip.toolAxe||p.durability[p.equip.toolAxe]<=0)return log('伐木需要可用斧头。','warn');let gain=rand(4,8)+(p.tech.wood?2:0);p.res.wood+=gain;useDurability(p.equip.toolAxe,6);updateTime(2);log(`伐木成功，木头 +${gain}`,'ok')}
+  if(type==='mine'){if(!p.equip.toolPick||p.durability[p.equip.toolPick]<=0)return log('挖矿需要可用镐子。','warn');let iron=rand(1,4),coal=rand(1,3),niter=rand(0,2);p.res.iron+=iron;p.res.coal+=coal;p.res.niter+=niter;useDurability(p.equip.toolPick,6);updateTime(3);log(`采矿：铁+${iron} 煤炭+${coal} 硝石+${niter}`,'ok')}
+  if(type==='farm'){if(!p.equip.toolHoe||p.durability[p.equip.toolHoe]<=0)return log('种地需要可用锄头。','warn');if(p.res.food<1)return log('种地需要食物种子 1。','warn');p.res.food-=1;p.tech.wood=true;useDurability(p.equip.toolHoe,5);updateTime(3);log('完成耕种，木器阶段稳固。','ok')}
+  if(type==='research'){if(!p.buildings.bench){if(p.res.wood>=10&&p.res.iron>=3){p.res.wood-=10;p.res.iron-=3;p.buildings.bench=true;updateTime(4);log('先建立了科研台。','ok')}else{return log('先建科研台：木头10+铁3。','warn')}}
+    if(!p.tech.wood){p.tech.wood=true;updateTime(3);return log('科技树推进：木器时代完成。','ok')}
+    if(!p.tech.iron){if(p.res.iron<5||p.res.coal<3)return log('铁器时代需要铁5煤炭3','warn');p.res.iron-=5;p.res.coal-=3;p.tech.iron=true;p.inv['粗木锄']=(p.inv['粗木锄']||0)+1;p.equip.toolHoe='粗木锄';updateTime(4);return log('科技树推进：铁器时代完成，解锁锄头。','ok')}
+    if(!p.tech.steel){if(p.res.iron<6||p.res.coal<4)return log('钢铁时代需要铁6煤炭4','warn');p.res.iron-=6;p.res.coal-=4;p.res.steel+=2;p.tech.steel=true;updateTime(5);return log('科技树推进：钢铁时代完成。','ok')}
+    log('科技树已研发完。','warn')}
+
+  if(type==='townBlacksmith'){if(p.gold<10)return log('铁匠服务需金币 10。','warn');p.gold-=10;if(!p.equip.helmet){p.equip.helmet='皮帽';p.inv['皮帽']=(p.inv['皮帽']||0)+1}else if(!p.equip.chest){p.equip.chest='铁甲';p.inv['铁甲']=(p.inv['铁甲']||0)+1}else{p.equip.weapon='精铁剑';p.inv['精铁剑']=(p.inv['精铁剑']||0)+1;p.atk+=2}updateTime(2);log('铁匠完成打造。','ok')}
+  if(type==='townAlchemist'){if(p.gold<6)return log('药师服务需金币 6。','warn');p.gold-=6;p.inv['草药茶']=(p.inv['草药茶']||0)+1;updateTime(2);log('药师制作了草药茶。','ok')}
+  if(type==='townMayor'){if(p.gold<4)return log('镇长委托押金 4 金币。','warn');p.gold-=4;const reward=rand(8,14);p.gold+=reward;updateTime(2);log(`完成镇长委托，金币 +${reward-4}`,'ok')}
+
+  // 冒险稀有发现
+  if(type==='travel' && $('#location').value==='ruins' && rand(1,100)<=20){p.inv['远古剑']=(p.inv['远古剑']||0)+1;log('你在遗迹发现了【远古剑】！','ok')}
+  if(type==='travel' && $('#location').value==='orcCamp' && rand(1,100)<=25){p.inv['精铁剑']=(p.inv['精铁剑']||0)+1;log('你缴获了【精铁剑】！','ok')}
+
+  if(p.hp<=0){document.querySelectorAll('button').forEach(b=>b.disabled=true);log('你已倒下，游戏结束。','warn');}
+  render();
+}
+
+$('#startBtn').addEventListener('click',()=>{initPlayer();$('#setupPanel').style.display='none';$('#gameArea').style.display='grid';render();log('开局赠送：粗木斧、粗木镐。请先探索并加入阵营。','ok');});
+document.querySelectorAll('[data-action]').forEach(b=>b.addEventListener('click',()=>action(b.dataset.action)));
+document.querySelectorAll('[data-scene]').forEach(b=>b.addEventListener('click',()=>switchScene(b.dataset.scene)));
+loadData();
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "id_rule": "itm_<category>_<3-digit>",
+    "categories": [
+      "resource",
+      "consumable_food",
+      "consumable_drink",
+      "equipment_weapon",
+      "equipment_armor",
+      "equipment_tool",
+      "material_special"
+    ]
+  },
+  "items": [
+    { "id": "itm_resource_001", "name": "木头", "category": "resource", "description": "基础建材。" },
+    { "id": "itm_resource_002", "name": "食物", "category": "resource", "description": "基础口粮。" },
+    { "id": "itm_resource_003", "name": "清水", "category": "resource", "description": "饮水来源。" },
+    { "id": "itm_resource_004", "name": "铁矿", "category": "resource", "description": "铁器原料。" },
+    { "id": "itm_resource_005", "name": "煤炭", "category": "resource", "description": "冶炼燃料。" },
+    { "id": "itm_resource_006", "name": "钢锭", "category": "resource", "description": "钢制装备材料。" },
+
+    { "id": "itm_consumable_food_001", "name": "面包", "category": "consumable_food", "recover": { "hunger": 18 }, "description": "可直接食用。" },
+    { "id": "itm_consumable_food_002", "name": "炖汤", "category": "consumable_food", "recover": { "hunger": 25, "thirst": 6 }, "description": "厨房制作。" },
+    { "id": "itm_consumable_food_003", "name": "烤肉", "category": "consumable_food", "recover": { "hunger": 28 }, "description": "高恢复食物。" },
+
+    { "id": "itm_consumable_drink_001", "name": "井水", "category": "consumable_drink", "recover": { "thirst": 25 }, "description": "水井获取。" },
+    { "id": "itm_consumable_drink_002", "name": "草药茶", "category": "consumable_drink", "recover": { "thirst": 16, "rest": 6 }, "description": "可稍微恢复精神。" },
+
+    { "id": "itm_equipment_tool_001", "name": "粗木斧", "category": "equipment_tool", "slot": "toolAxe", "durability": 60, "description": "伐木必需工具（开局赠送）。" },
+    { "id": "itm_equipment_tool_002", "name": "粗木镐", "category": "equipment_tool", "slot": "toolPick", "durability": 60, "description": "采矿必需工具（开局赠送）。" },
+    { "id": "itm_equipment_tool_003", "name": "粗木锄", "category": "equipment_tool", "slot": "toolHoe", "durability": 70, "description": "耕地必需工具。" },
+
+    { "id": "itm_equipment_weapon_001", "name": "木棍", "category": "equipment_weapon", "slot": "weapon", "durability": 80, "power": 1, "description": "基础武器。" },
+    { "id": "itm_equipment_weapon_002", "name": "精铁剑", "category": "equipment_weapon", "slot": "weapon", "durability": 120, "power": 4, "description": "冒险可获取。" },
+    { "id": "itm_equipment_weapon_003", "name": "远古剑", "category": "equipment_weapon", "slot": "weapon", "durability": 180, "power": 7, "description": "遗迹稀有掉落。" },
+
+    { "id": "itm_equipment_armor_001", "name": "皮帽", "category": "equipment_armor", "slot": "helmet", "durability": 80, "armor": 1, "description": "头部护具。" },
+    { "id": "itm_equipment_armor_002", "name": "铁甲", "category": "equipment_armor", "slot": "chest", "durability": 120, "armor": 3, "description": "胸部护具。" },
+    { "id": "itm_equipment_armor_003", "name": "护腿", "category": "equipment_armor", "slot": "pants", "durability": 100, "armor": 2, "description": "腿部护具。" },
+    { "id": "itm_equipment_armor_004", "name": "皮靴", "category": "equipment_armor", "slot": "shoes", "durability": 90, "armor": 1, "description": "脚部护具。" },
+
+    { "id": "itm_material_special_001", "name": "远古碎片", "category": "material_special", "description": "遗迹科技研究材料。" }
+  ]
+}
