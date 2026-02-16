@@ -22,13 +22,12 @@
         color: var(--text);
       }
       .container {
-        max-width: 980px;
+        max-width: 1120px;
         margin: 24px auto;
         padding: 0 16px;
       }
-      h1 {
-        margin: 0 0 12px;
-      }
+      h1 { margin: 0 0 12px; }
+      h2 { margin: 0 0 10px; }
       .card {
         background: var(--panel);
         border: 1px solid #2d3c45;
@@ -36,13 +35,9 @@
         padding: 14px;
         margin-bottom: 12px;
       }
-      .grid {
-        display: grid;
-        gap: 12px;
-      }
-      .grid-2 {
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      }
+      .grid { display: grid; gap: 12px; }
+      .grid-2 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+      .grid-3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
       label { display: block; margin-bottom: 6px; color: var(--muted); }
       input, select, button {
         width: 100%;
@@ -53,10 +48,7 @@
         color: var(--text);
         padding: 10px;
       }
-      button {
-        cursor: pointer;
-        transition: .15s ease;
-      }
+      button { cursor: pointer; transition: .15s ease; }
       button:hover:enabled { border-color: var(--accent); }
       button:disabled { opacity: 0.5; cursor: not-allowed; }
       .actions {
@@ -64,12 +56,10 @@
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 8px;
       }
-      .status {
-        line-height: 1.8;
-      }
+      .status { line-height: 1.8; }
       .tag { color: var(--accent); }
       .log {
-        height: 280px;
+        height: 300px;
         overflow: auto;
         background: #0e151a;
         border-radius: 8px;
@@ -80,6 +70,10 @@
       .ok { color: var(--ok); }
       .warn { color: var(--warn); }
       .hint { color: var(--muted); font-size: 13px; }
+      .list { line-height: 1.8; }
+      .inline { display: flex; align-items: end; gap: 8px; }
+      .inline > div { flex: 1; }
+      .inline > button { width: 180px; }
     </style>
   </head>
   <body>
@@ -118,7 +112,7 @@
             </select>
           </div>
         </div>
-        <p class="hint">目标：开局砍伐木材、收集食物，逐步建立农田和科技，升级庇护所并参与冒险。</p>
+        <p class="hint">新增系统：地点冒险、四季与昼夜、结冰与作物限制、物品栏、建筑、城镇/NPC、货币交易。</p>
         <button id="startBtn">开始游戏</button>
       </section>
 
@@ -136,7 +130,37 @@
           <button data-action="tech">发展科技</button>
           <button data-action="shelter">升级庇护所</button>
           <button data-action="train">训练（武力/魔法）</button>
-          <button data-action="adventure">外出冒险</button>
+          <button data-action="town">前往城镇</button>
+        </div>
+        <div class="inline" style="margin-top:10px">
+          <div>
+            <label for="adventureLocation">外出冒险地点</label>
+            <select id="adventureLocation">
+              <option value="frozenLake">霜裂湖</option>
+              <option value="greenForest">青杉林地</option>
+              <option value="ruins">古代遗迹</option>
+              <option value="orcCamp">兽人营地</option>
+            </select>
+          </div>
+          <button data-action="adventure">按地点冒险</button>
+        </div>
+      </section>
+
+      <section class="card" id="worldPanel" style="display:none">
+        <h2>背包与建筑</h2>
+        <div class="grid grid-3">
+          <div>
+            <div class="hint">物品栏</div>
+            <div id="inventory" class="list"></div>
+          </div>
+          <div>
+            <div class="hint">已建建筑</div>
+            <div id="buildings" class="list"></div>
+          </div>
+          <div>
+            <div class="hint">城镇NPC关系</div>
+            <div id="town" class="list"></div>
+          </div>
         </div>
       </section>
 
@@ -147,20 +171,39 @@
     </div>
 
     <script>
-      const state = {
-        started: false,
-        player: null,
-      };
+      const state = { started: false, player: null };
 
       const statusEl = document.getElementById('status');
       const logEl = document.getElementById('log');
+      const inventoryEl = document.getElementById('inventory');
+      const buildingsEl = document.getElementById('buildings');
+      const townEl = document.getElementById('town');
+      const adventureLocationEl = document.getElementById('adventureLocation');
+
       const setupPanel = document.getElementById('setupPanel');
       const gamePanel = document.getElementById('gamePanel');
       const actionPanel = document.getElementById('actionPanel');
+      const worldPanel = document.getElementById('worldPanel');
       const logPanel = document.getElementById('logPanel');
+
+      const seasons = ['春', '夏', '秋', '冬'];
+      const timesOfDay = ['清晨', '正午', '黄昏', '深夜'];
 
       function rand(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function addItem(name, qty = 1) {
+        const p = state.player;
+        p.inventory[name] = (p.inventory[name] || 0) + qty;
+      }
+
+      function removeItem(name, qty = 1) {
+        const p = state.player;
+        if ((p.inventory[name] || 0) < qty) return false;
+        p.inventory[name] -= qty;
+        if (p.inventory[name] <= 0) delete p.inventory[name];
+        return true;
       }
 
       function log(msg, level = '') {
@@ -171,14 +214,45 @@
         logEl.scrollTop = logEl.scrollHeight;
       }
 
-      function renderStatus() {
+      function updateSeasonAndTime() {
         const p = state.player;
+        const seasonIndex = Math.floor(((p.day - 1) % 40) / 10);
+        p.season = seasons[seasonIndex];
+        p.timeIndex = (p.day - 1) % 4;
+      }
+
+      function getTimeName() {
+        const p = state.player;
+        return timesOfDay[p.timeIndex];
+      }
+
+      function renderPanels() {
+        const p = state.player;
+        const frozen = p.season === '冬' ? '（结冰）' : '';
         statusEl.innerHTML = `
-          <div>第 <span class="tag">${p.day}</span> 天</div>
+          <div>第 <span class="tag">${p.day}</span> 天｜季节：<span class="tag">${p.season}</span>｜时间：<span class="tag">${getTimeName()}</span></div>
           <div>姓名：<span class="tag">${p.name}</span>｜种族：${p.race}｜阵营：${p.faction}｜成长：${p.path}</div>
           <div>生命：${p.hp}｜武力：${p.attack}｜魔法：${p.magic}</div>
-          <div>木材：${p.wood}｜食物：${p.food}｜农田：${p.farmland} 级</div>
-          <div>庇护所：${p.shelterLevel} 级｜科技：${p.techLevel} 级</div>
+          <div>木材：${p.wood}｜食物：${p.food}｜货币：${p.gold} 金币</div>
+          <div>农田：${p.farmland} 级｜庇护所：${p.shelterLevel} 级｜科技：${p.techLevel} 级｜城镇声望：${p.townRep}</div>
+          <div>水域状态：霜裂湖 ${frozen}</div>
+        `;
+
+        const inv = Object.entries(p.inventory)
+          .map(([k, v]) => `${k} × ${v}`)
+          .join('<br>') || '（空）';
+        inventoryEl.innerHTML = inv;
+
+        const built = Object.entries(p.buildings)
+          .filter(([, v]) => v)
+          .map(([k]) => k)
+          .join('<br>') || '（暂无）';
+        buildingsEl.innerHTML = built;
+
+        townEl.innerHTML = `
+          铁匠·格罗姆：${p.npc.blacksmith}<br>
+          药师·艾琳：${p.npc.alchemist}<br>
+          镇长·维托：${p.npc.mayor}
         `;
       }
 
@@ -191,20 +265,19 @@
         const player = {
           name, race, faction, path,
           hp: 100, attack: 8, magic: 8,
-          wood: 0, food: 5,
+          wood: 0, food: 5, gold: 20,
           farmland: 0, shelterLevel: 0, techLevel: 0,
-          day: 1,
+          day: 1, season: '春', timeIndex: 0,
+          townRep: 0,
+          inventory: { 小麦种子: 2, 草药: 1 },
+          buildings: { 工坊: false, 仓库: false, 法师塔: false },
+          npc: { blacksmith: 0, alchemist: 0, mayor: 0 },
           flags: new Set(),
         };
 
-        if (race === '兽人') {
-          player.attack += 4;
-          player.hp += 15;
-        } else if (race === '精灵') {
-          player.magic += 4;
-        } else if (race === '矮人') {
-          player.wood += 3;
-        }
+        if (race === '兽人') { player.attack += 4; player.hp += 15; }
+        else if (race === '精灵') { player.magic += 4; }
+        else if (race === '矮人') { player.wood += 3; player.gold += 5; }
 
         if (path === '武力修行') player.attack += 3;
         else player.magic += 3;
@@ -219,14 +292,159 @@
         setupPanel.style.display = 'none';
         gamePanel.style.display = 'block';
         actionPanel.style.display = 'block';
+        worldPanel.style.display = 'block';
         logPanel.style.display = 'block';
 
+        updateSeasonAndTime();
         log('你已踏入荒境，第一天从生存开始！', 'ok');
-        renderStatus();
+        renderPanels();
+      }
+
+      function buildExtraBuilding() {
+        const p = state.player;
+        if (!p.buildings.工坊 && p.wood >= 12 && p.gold >= 10) {
+          p.wood -= 12;
+          p.gold -= 10;
+          p.buildings.工坊 = true;
+          log('你建成了【工坊】，制作效率提升。', 'ok');
+          return;
+        }
+        if (!p.buildings.仓库 && p.wood >= 10) {
+          p.wood -= 10;
+          p.buildings.仓库 = true;
+          addItem('粮袋', 1);
+          log('你建成了【仓库】，获得额外储粮空间（粮袋+1）。', 'ok');
+          return;
+        }
+        if (!p.buildings.法师塔 && p.techLevel >= 2 && p.wood >= 14 && p.gold >= 18) {
+          p.wood -= 14;
+          p.gold -= 18;
+          p.buildings.法师塔 = true;
+          p.magic += 3;
+          log('你建成了【法师塔】，魔法上限提升。', 'ok');
+          return;
+        }
+      }
+
+      function visitTown() {
+        const p = state.player;
+        log('你来到灰石城镇，与 NPC 进行交易和交流。');
+
+        if (p.gold >= 6) {
+          p.gold -= 6;
+          addItem('面包', 2);
+          p.food += 2;
+          p.npc.mayor += 1;
+          p.townRep += 1;
+          log('镇长为你安排补给：花费 6 金币，获得面包×2，食物+2。', 'ok');
+        } else {
+          log('金币不足，镇长暂时无法提供更多补给。', 'warn');
+        }
+
+        if (p.gold >= 8) {
+          p.gold -= 8;
+          p.attack += 1;
+          p.npc.blacksmith += 1;
+          log('铁匠格罗姆为你强化武器：花费 8 金币，武力+1。', 'ok');
+        }
+
+        if (p.gold >= 7) {
+          p.gold -= 7;
+          p.magic += 1;
+          p.npc.alchemist += 1;
+          addItem('法力药剂', 1);
+          log('药师艾琳为你调制药剂：花费 7 金币，魔法+1，法力药剂+1。', 'ok');
+        }
+
+        if (p.townRep >= 6 && !p.flags.has('townQuest')) {
+          p.flags.add('townQuest');
+          p.gold += 30;
+          addItem('城镇通行证', 1);
+          log('你获得城镇委托奖励：金币+30，城镇通行证+1。', 'ok');
+        }
+      }
+
+      function resolveAdventure(location) {
+        const p = state.player;
+        const isWinter = p.season === '冬';
+
+        const map = {
+          frozenLake: {
+            name: '霜裂湖',
+            basePower: 10,
+            rewardGold: [5, 11],
+            rewardFood: [1, 3],
+            special: () => {
+              if (isWinter) {
+                addItem('冰晶', 1);
+                log('冬季湖面结冰，你采得稀有素材【冰晶】。', 'ok');
+              } else {
+                addItem('鱼', 2);
+                log('你在湖边捕获鱼×2。', 'ok');
+              }
+            },
+          },
+          greenForest: {
+            name: '青杉林地',
+            basePower: 12,
+            rewardGold: [4, 9],
+            rewardFood: [2, 5],
+            special: () => {
+              addItem('木材束', 1);
+              p.wood += 2;
+              log('你在林地清理枯枝，额外木材+2，木材束+1。', 'ok');
+            },
+          },
+          ruins: {
+            name: '古代遗迹',
+            basePower: 16,
+            rewardGold: [8, 16],
+            rewardFood: [0, 3],
+            special: () => {
+              if (rand(1, 100) <= 35) {
+                addItem('古代芯片', 1);
+                p.techLevel += 1;
+                log('你找到古代芯片，科技灵感爆发（科技+1）。', 'ok');
+              }
+            },
+          },
+          orcCamp: {
+            name: '兽人营地',
+            basePower: 18,
+            rewardGold: [10, 20],
+            rewardFood: [1, 4],
+            special: () => {
+              if (rand(1, 100) <= 40) {
+                addItem('战旗碎片', 1);
+              }
+            },
+          },
+        };
+
+        const conf = map[location];
+        const enemyPower = rand(conf.basePower, conf.basePower + 12) + Math.floor(p.day / 2);
+        const playerPower = p.attack + Math.floor(p.magic / 2) + rand(0, 8);
+
+        log(`你前往【${conf.name}】冒险。敌方战力 ${enemyPower}，你的判定 ${playerPower}。`);
+
+        if (playerPower >= enemyPower) {
+          const gold = rand(conf.rewardGold[0], conf.rewardGold[1]);
+          const food = rand(conf.rewardFood[0], conf.rewardFood[1]);
+          p.gold += gold;
+          p.food += food;
+          p.townRep += 1;
+          log(`冒险胜利！金币 +${gold}，食物 +${food}，城镇声望 +1。`, 'ok');
+          conf.special();
+        } else {
+          const damage = rand(8, 20);
+          p.hp -= damage;
+          log(`冒险受挫，生命 -${damage}。`, 'warn');
+        }
       }
 
       function endOfDay() {
         const p = state.player;
+
         const consume = Math.max(3, 5 - p.farmland);
         p.food -= consume;
         log(`日终消耗食物 ${consume}。`);
@@ -238,21 +456,34 @@
         }
 
         if (p.day % 3 === 0 && p.farmland > 0) {
-          const harvest = p.farmland * rand(2, 4);
-          p.food += harvest;
-          log(`农田迎来收成，获得食物 ${harvest}。`, 'ok');
+          if (p.season === '冬') {
+            log('冬季严寒，农田冻结，本轮无法采收作物。', 'warn');
+          } else {
+            const harvest = p.farmland * rand(2, 4);
+            p.food += harvest;
+            addItem('谷物', p.farmland);
+            log(`农田迎来收成，获得食物 ${harvest}，谷物 +${p.farmland}。`, 'ok');
+          }
+        }
+
+        if (p.buildings.工坊 && rand(1, 100) <= 30) {
+          p.wood += 2;
+          log('工坊自动加工木材，额外木材 +2。', 'ok');
         }
 
         p.day += 1;
+        updateSeasonAndTime();
+        buildExtraBuilding();
 
         if (p.hp <= 0) {
           log('你在荒境中倒下了。游戏结束。', 'warn');
           document.querySelectorAll('[data-action]').forEach((b) => (b.disabled = true));
-        } else if (p.shelterLevel >= 3 && p.techLevel >= 3 && p.day > 12) {
-          log('你建立了稳固文明据点，恭喜达成胜利结局：拓荒领主！', 'ok');
+        } else if (p.shelterLevel >= 3 && p.techLevel >= 3 && p.day > 16 && p.townRep >= 6) {
+          log('你联合城镇建立了稳定文明据点，达成结局：荒境执政官！', 'ok');
           document.querySelectorAll('[data-action]').forEach((b) => (b.disabled = true));
         }
-        renderStatus();
+
+        renderPanels();
       }
 
       function doAction(action) {
@@ -262,13 +493,15 @@
         if (action === 'wood') {
           const gain = rand(3, 8);
           p.wood += gain;
-          log(`你砍伐树木，获得木材 ${gain}。`);
+          addItem('木材束', 1);
+          log(`你砍伐树木，获得木材 ${gain}，木材束 +1。`);
         }
 
         if (action === 'food') {
           const gain = rand(2, 6);
           p.food += gain;
-          log(`你采集并狩猎，获得食物 ${gain}。`);
+          addItem('野果', 1);
+          log(`你采集并狩猎，获得食物 ${gain}，野果 +1。`);
         }
 
         if (action === 'farm') {
@@ -287,15 +520,17 @@
         if (action === 'tech') {
           const costWood = 5 + p.techLevel * 3;
           const costFood = 4;
-          if (p.wood >= costWood && p.food >= costFood) {
+          const costGold = 6;
+          if (p.wood >= costWood && p.food >= costFood && p.gold >= costGold) {
             p.wood -= costWood;
             p.food -= costFood;
+            p.gold -= costGold;
             p.techLevel += 1;
             if (p.path === '武力修行') p.attack += 2;
             else p.magic += 2;
             log(`科技突破成功，科技等级提升到 ${p.techLevel}。`, 'ok');
           } else {
-            log(`资源不足：发展科技需要木材 ${costWood}、食物 ${costFood}。`, 'warn');
+            log(`资源不足：发展科技需要木材 ${costWood}、食物 ${costFood}、金币 ${costGold}。`, 'warn');
           }
         }
 
@@ -322,27 +557,12 @@
           }
         }
 
-        if (action === 'adventure') {
-          const enemy = ['荒野狼群', '堕落兽人', '迷雾妖灵', '遗迹守卫'][rand(0, 3)];
-          const enemyPower = rand(8, 20) + Math.floor(p.day / 2);
-          const playerPower = p.attack + Math.floor(p.magic / 2) + rand(0, 6);
-          log(`你踏上冒险，遭遇【${enemy}】！敌方战力 ${enemyPower}，你的判定 ${playerPower}。`);
+        if (action === 'town') {
+          visitTown();
+        }
 
-          if (playerPower >= enemyPower) {
-            const woodReward = rand(2, 6);
-            const foodReward = rand(2, 6);
-            p.wood += woodReward;
-            p.food += foodReward;
-            log(`你获胜了！获得木材 ${woodReward}、食物 ${foodReward}。`, 'ok');
-            if (!p.flags.has('firstAdventure')) {
-              p.flags.add('firstAdventure');
-              log('首次冒险成功，你在阵营中的声望提升。', 'ok');
-            }
-          } else {
-            const damage = rand(8, 18);
-            p.hp -= damage;
-            log(`你战败撤退，生命 -${damage}。`, 'warn');
-          }
+        if (action === 'adventure') {
+          resolveAdventure(adventureLocationEl.value);
         }
 
         endOfDay();
