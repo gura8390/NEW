@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>荒境纪元：文字生存冒险（网页版）</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #101417;
+        --panel: #1a2329;
+        --muted: #9bb0be;
+        --text: #eff7fc;
+        --accent: #67d4ff;
+        --ok: #6bdf94;
+        --warn: #ffcf66;
+      }
+      body {
+        margin: 0;
+        font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+        background: radial-gradient(circle at top, #1d2a32, var(--bg) 55%);
+        color: var(--text);
+      }
+      .container {
+        max-width: 980px;
+        margin: 24px auto;
+        padding: 0 16px;
+      }
+      h1 {
+        margin: 0 0 12px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid #2d3c45;
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 12px;
+      }
+      .grid {
+        display: grid;
+        gap: 12px;
+      }
+      .grid-2 {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+      label { display: block; margin-bottom: 6px; color: var(--muted); }
+      input, select, button {
+        width: 100%;
+        box-sizing: border-box;
+        border-radius: 8px;
+        border: 1px solid #3b4b56;
+        background: #10171c;
+        color: var(--text);
+        padding: 10px;
+      }
+      button {
+        cursor: pointer;
+        transition: .15s ease;
+      }
+      button:hover:enabled { border-color: var(--accent); }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      .actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 8px;
+      }
+      .status {
+        line-height: 1.8;
+      }
+      .tag { color: var(--accent); }
+      .log {
+        height: 280px;
+        overflow: auto;
+        background: #0e151a;
+        border-radius: 8px;
+        padding: 10px;
+        border: 1px solid #2a3942;
+        white-space: pre-wrap;
+      }
+      .ok { color: var(--ok); }
+      .warn { color: var(--warn); }
+      .hint { color: var(--muted); font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>荒境纪元：文字生存冒险（网页版）</h1>
+
+      <section class="card" id="setupPanel">
+        <h2>角色创建</h2>
+        <div class="grid grid-2">
+          <div>
+            <label for="name">名字</label>
+            <input id="name" placeholder="无名旅者" />
+          </div>
+          <div>
+            <label for="race">种族</label>
+            <select id="race">
+              <option>人类</option>
+              <option>兽人</option>
+              <option>精灵</option>
+              <option>矮人</option>
+            </select>
+          </div>
+          <div>
+            <label for="faction">阵营</label>
+            <select id="faction">
+              <option>晨光同盟</option>
+              <option>钢铁部族</option>
+              <option>暮影议会</option>
+            </select>
+          </div>
+          <div>
+            <label for="path">成长路线</label>
+            <select id="path">
+              <option>武力修行</option>
+              <option>奥术研习</option>
+            </select>
+          </div>
+        </div>
+        <p class="hint">目标：开局砍伐木材、收集食物，逐步建立农田和科技，升级庇护所并参与冒险。</p>
+        <button id="startBtn">开始游戏</button>
+      </section>
+
+      <section class="card" id="gamePanel" style="display:none">
+        <h2>生存状态</h2>
+        <div id="status" class="status"></div>
+      </section>
+
+      <section class="card" id="actionPanel" style="display:none">
+        <h2>今日行动</h2>
+        <div class="actions">
+          <button data-action="wood">砍伐木材</button>
+          <button data-action="food">收集食物</button>
+          <button data-action="farm">建设农田</button>
+          <button data-action="tech">发展科技</button>
+          <button data-action="shelter">升级庇护所</button>
+          <button data-action="train">训练（武力/魔法）</button>
+          <button data-action="adventure">外出冒险</button>
+        </div>
+      </section>
+
+      <section class="card" id="logPanel" style="display:none">
+        <h2>事件日志</h2>
+        <div id="log" class="log"></div>
+      </section>
+    </div>
+
+    <script>
+      const state = {
+        started: false,
+        player: null,
+      };
+
+      const statusEl = document.getElementById('status');
+      const logEl = document.getElementById('log');
+      const setupPanel = document.getElementById('setupPanel');
+      const gamePanel = document.getElementById('gamePanel');
+      const actionPanel = document.getElementById('actionPanel');
+      const logPanel = document.getElementById('logPanel');
+
+      function rand(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function log(msg, level = '') {
+        const div = document.createElement('div');
+        if (level) div.classList.add(level);
+        div.textContent = msg;
+        logEl.appendChild(div);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      function renderStatus() {
+        const p = state.player;
+        statusEl.innerHTML = `
+          <div>第 <span class="tag">${p.day}</span> 天</div>
+          <div>姓名：<span class="tag">${p.name}</span>｜种族：${p.race}｜阵营：${p.faction}｜成长：${p.path}</div>
+          <div>生命：${p.hp}｜武力：${p.attack}｜魔法：${p.magic}</div>
+          <div>木材：${p.wood}｜食物：${p.food}｜农田：${p.farmland} 级</div>
+          <div>庇护所：${p.shelterLevel} 级｜科技：${p.techLevel} 级</div>
+        `;
+      }
+
+      function startGame() {
+        const name = document.getElementById('name').value.trim() || '无名旅者';
+        const race = document.getElementById('race').value;
+        const faction = document.getElementById('faction').value;
+        const path = document.getElementById('path').value;
+
+        const player = {
+          name, race, faction, path,
+          hp: 100, attack: 8, magic: 8,
+          wood: 0, food: 5,
+          farmland: 0, shelterLevel: 0, techLevel: 0,
+          day: 1,
+          flags: new Set(),
+        };
+
+        if (race === '兽人') {
+          player.attack += 4;
+          player.hp += 15;
+        } else if (race === '精灵') {
+          player.magic += 4;
+        } else if (race === '矮人') {
+          player.wood += 3;
+        }
+
+        if (path === '武力修行') player.attack += 3;
+        else player.magic += 3;
+
+        if (faction === '晨光同盟') player.food += 2;
+        else if (faction === '钢铁部族') player.wood += 2;
+        else player.magic += 2;
+
+        state.started = true;
+        state.player = player;
+
+        setupPanel.style.display = 'none';
+        gamePanel.style.display = 'block';
+        actionPanel.style.display = 'block';
+        logPanel.style.display = 'block';
+
+        log('你已踏入荒境，第一天从生存开始！', 'ok');
+        renderStatus();
+      }
+
+      function endOfDay() {
+        const p = state.player;
+        const consume = Math.max(3, 5 - p.farmland);
+        p.food -= consume;
+        log(`日终消耗食物 ${consume}。`);
+
+        if (p.food < 0) {
+          p.hp += p.food;
+          p.food = 0;
+          log('食物短缺，你因饥饿受到伤害！', 'warn');
+        }
+
+        if (p.day % 3 === 0 && p.farmland > 0) {
+          const harvest = p.farmland * rand(2, 4);
+          p.food += harvest;
+          log(`农田迎来收成，获得食物 ${harvest}。`, 'ok');
+        }
+
+        p.day += 1;
+
+        if (p.hp <= 0) {
+          log('你在荒境中倒下了。游戏结束。', 'warn');
+          document.querySelectorAll('[data-action]').forEach((b) => (b.disabled = true));
+        } else if (p.shelterLevel >= 3 && p.techLevel >= 3 && p.day > 12) {
+          log('你建立了稳固文明据点，恭喜达成胜利结局：拓荒领主！', 'ok');
+          document.querySelectorAll('[data-action]').forEach((b) => (b.disabled = true));
+        }
+        renderStatus();
+      }
+
+      function doAction(action) {
+        const p = state.player;
+        if (!p || p.hp <= 0) return;
+
+        if (action === 'wood') {
+          const gain = rand(3, 8);
+          p.wood += gain;
+          log(`你砍伐树木，获得木材 ${gain}。`);
+        }
+
+        if (action === 'food') {
+          const gain = rand(2, 6);
+          p.food += gain;
+          log(`你采集并狩猎，获得食物 ${gain}。`);
+        }
+
+        if (action === 'farm') {
+          const costWood = 6 + p.farmland * 2;
+          const costFood = 3;
+          if (p.wood >= costWood && p.food >= costFood) {
+            p.wood -= costWood;
+            p.food -= costFood;
+            p.farmland += 1;
+            log(`农田建设成功，农田等级提升到 ${p.farmland}。`, 'ok');
+          } else {
+            log(`资源不足：建设农田需要木材 ${costWood}、食物 ${costFood}。`, 'warn');
+          }
+        }
+
+        if (action === 'tech') {
+          const costWood = 5 + p.techLevel * 3;
+          const costFood = 4;
+          if (p.wood >= costWood && p.food >= costFood) {
+            p.wood -= costWood;
+            p.food -= costFood;
+            p.techLevel += 1;
+            if (p.path === '武力修行') p.attack += 2;
+            else p.magic += 2;
+            log(`科技突破成功，科技等级提升到 ${p.techLevel}。`, 'ok');
+          } else {
+            log(`资源不足：发展科技需要木材 ${costWood}、食物 ${costFood}。`, 'warn');
+          }
+        }
+
+        if (action === 'shelter') {
+          const costWood = 8 + p.shelterLevel * 4;
+          if (p.wood >= costWood) {
+            p.wood -= costWood;
+            p.shelterLevel += 1;
+            p.hp += 8;
+            log(`庇护所升级成功，当前等级 ${p.shelterLevel}，生命提升。`, 'ok');
+          } else {
+            log(`资源不足：升级庇护所需要木材 ${costWood}。`, 'warn');
+          }
+        }
+
+        if (action === 'train') {
+          const gain = rand(1, 3);
+          if (p.path === '武力修行') {
+            p.attack += gain;
+            log(`你进行战斗训练，武力 +${gain}。`);
+          } else {
+            p.magic += gain;
+            log(`你冥想并操控魔力，魔法 +${gain}。`);
+          }
+        }
+
+        if (action === 'adventure') {
+          const enemy = ['荒野狼群', '堕落兽人', '迷雾妖灵', '遗迹守卫'][rand(0, 3)];
+          const enemyPower = rand(8, 20) + Math.floor(p.day / 2);
+          const playerPower = p.attack + Math.floor(p.magic / 2) + rand(0, 6);
+          log(`你踏上冒险，遭遇【${enemy}】！敌方战力 ${enemyPower}，你的判定 ${playerPower}。`);
+
+          if (playerPower >= enemyPower) {
+            const woodReward = rand(2, 6);
+            const foodReward = rand(2, 6);
+            p.wood += woodReward;
+            p.food += foodReward;
+            log(`你获胜了！获得木材 ${woodReward}、食物 ${foodReward}。`, 'ok');
+            if (!p.flags.has('firstAdventure')) {
+              p.flags.add('firstAdventure');
+              log('首次冒险成功，你在阵营中的声望提升。', 'ok');
+            }
+          } else {
+            const damage = rand(8, 18);
+            p.hp -= damage;
+            log(`你战败撤退，生命 -${damage}。`, 'warn');
+          }
+        }
+
+        endOfDay();
+      }
+
+      document.getElementById('startBtn').addEventListener('click', startGame);
+      document.querySelectorAll('[data-action]').forEach((btn) => {
+        btn.addEventListener('click', () => doAction(btn.dataset.action));
+      });
+    </script>
+  </body>
+</html>
